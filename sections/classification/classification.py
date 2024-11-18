@@ -4,8 +4,9 @@ import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split, KFold, StratifiedKFold, cross_val_score
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.svm import SVC
 from sklearn.metrics import accuracy_score
-from .dataCleaner import clean_data
+from .dataCleaner import clean_data  # Assurez-vous que la fonction clean_data est bien définie dans le fichier 'dataCleaner.py'
 
 def classification_page():
     st.header("Bienvenue dans notre modèle de prédiction")
@@ -82,24 +83,38 @@ def classification_page():
             test_size = st.slider("Sélectionner la taille de l'ensemble de test", 0.1, 0.5, 0.3)
             X_train, X_test, y_train, y_test = train_test_split(X_selected, y, test_size=test_size, random_state=42, stratify=y)
 
-            # Sélection du modèle
-            model_choice = st.selectbox("Choisissez le modèle de classification", ["Logistic Regression", "Random Forest"])
-            
             # Sélection du type de validation croisée
             cv_choice = st.selectbox("Choisissez le type de validation croisée", ["KFold", "StratifiedKFold"])
             n_splits = st.slider("Nombre de plis pour la validation croisée", 2, 10, 5)
 
-            if model_choice == "Logistic Regression":
-                model = LogisticRegression(max_iter=1000)
-                if st.button('Lancer l\'entraînement'):
-                    entrainer_et_afficher_resultats(model, X_selected, y, cv_choice, n_splits)
-            elif model_choice == "Random Forest":
-                nombre_arbre = st.selectbox("Choisissez le nombre d'arbres souhaités dans le modèle : ", options=[10, 50, 100, 200, 500])
-                if st.button('Lancer l\'entraînement'):
-                    model = RandomForestClassifier(n_estimators=nombre_arbre, random_state=42)
-                    entrainer_et_afficher_resultats(model, X_selected, y, cv_choice, n_splits)
+            # Bouton pour démarrer l'entraînement
+            if st.button("Démarrer l'entraînement"):
+                # Initialisation des modèles
+                models = {
+                    "Logistic Regression": LogisticRegression(max_iter=1000),
+                    "Random Forest": RandomForestClassifier(n_estimators=100, random_state=42),
+                    "SVM": SVC(random_state=42)
+                }
 
-def entrainer_et_afficher_resultats(model, X, y, cv_choice, n_splits):
+                model_results = {}
+
+                # Evaluer chaque modèle avec la validation croisée
+                for model_name, model in models.items():
+                    mean_accuracy, std_accuracy = entrainer_et_afficher_resultats(model, X_selected, y, cv_choice, n_splits, model_name)
+                    model_results[model_name] = {"mean": mean_accuracy, "std": std_accuracy}
+
+                # Comparaison des modèles
+                if model_results:
+                    st.write("Comparaison des performances des modèles :")
+                    model_comparison_df = pd.DataFrame(model_results).T
+                    model_comparison_df.columns = ['Précision moyenne', 'Écart-type']
+                    st.write(model_comparison_df)
+
+                    # Affichage du meilleur modèle
+                    best_model_name = min(model_results, key=lambda x: model_results[x]["mean"])
+                    st.write(f"Le meilleur modèle est : {best_model_name} avec une précision moyenne de {model_results[best_model_name]['mean']:.2f}.")
+
+def entrainer_et_afficher_resultats(model, X, y, cv_choice, n_splits, model_name):
     if cv_choice == "KFold":
         cv = KFold(n_splits=n_splits, shuffle=True, random_state=42)
     elif cv_choice == "StratifiedKFold":
@@ -107,7 +122,9 @@ def entrainer_et_afficher_resultats(model, X, y, cv_choice, n_splits):
 
     # Cross-validation
     cv_results = cross_val_score(model, X, y, cv=cv, scoring='accuracy')
-    st.write(f"Résultats de la validation croisée ({cv_choice}) :")
+    
+    # Affichage des résultats avec le nom du modèle
+    st.write(f"Résultats de la validation croisée ({cv_choice}) pour le modèle {model_name} :")
     st.write(cv_results)
     st.write(f"Précision moyenne : {cv_results.mean():.2f}")
     st.write(f"Écart-type de la précision : {cv_results.std():.2f}")
@@ -116,20 +133,7 @@ def entrainer_et_afficher_resultats(model, X, y, cv_choice, n_splits):
     model.fit(X, y)
     
     # Prédictions sur l'ensemble de test
-    st.write("Entraînement final sur l'ensemble complet des données effectué.")
+    st.write(f"Entraînement final sur l'ensemble complet des données pour le modèle {model_name} effectué.")
 
-    # Affichage des importances des features pour le RandomForest
-    if isinstance(model, RandomForestClassifier):
-        feature_importances = pd.Series(model.feature_importances_, index=X.columns)
-        st.write("Importance des features (modèle final) : ")
-        st.write(feature_importances)
+    return cv_results.mean(), cv_results.std()
 
-    # Graphique des résultats de validation croisée
-    st.write("Graphique des résultats de validation croisée :")
-    plt.figure(figsize=(10, 6))
-    plt.plot(range(1, n_splits + 1), cv_results, marker='o')
-    plt.xlabel('Pli')
-    plt.ylabel('Précision')
-    plt.title(f'Précision de la validation croisée ({cv_choice})')
-    plt.grid(True)
-    st.pyplot(plt)
