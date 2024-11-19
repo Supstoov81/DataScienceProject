@@ -2,8 +2,6 @@ import streamlit as st
 import io
 import base64
 from PIL import Image, ImageDraw
-
-
 from inference_sdk import InferenceHTTPClient
 
 CLIENT = InferenceHTTPClient(
@@ -12,12 +10,30 @@ CLIENT = InferenceHTTPClient(
 
 
 def nail_page():
+    """
+    # Nail Page Flow
+
+    🟢 init session variable to store uploaded images
+
+    📂 Show file input & retrieve files once uploaded
+
+    📝 User clicks on buttons which perform a callback
+
+    📈 Show results once `result_images` session state has been updated
+
+
+    ## Buttons
+    1. show images
+        2. Call roboflow api on click
+    """
     st.header("Bienvenue")
     st.caption("Bienvenue dans la détection d'ongle")
 
+    # init session variable to store uploaded images
     if "images" not in st.session_state:
         st.session_state["images"] = None
 
+    # file input
     images = st.file_uploader(
         "Upload vos images",
         type=["jpg", "png", "jpeg"],
@@ -27,17 +43,32 @@ def nail_page():
     if images is not None:
         st.session_state["images"] = images
 
-    st.button("Afficher les images", on_click=show_images, disabled=len(images) == 0)
+    ### Control buttons ###
 
+    # 1. show images
     st.button(
-        "Détecter les ongles", on_click=on_images_uploaded, disabled=len(images) == 0
+        "Afficher les images",
+        on_click=show_images,
+        disabled=len(images) == 0,
+        label="show uploaded images",
+    )
+
+    # 2. Call roboflow api on click (on_click callback)
+    st.button(
+        "Détecter les ongles",
+        on_click=on_images_uploaded,
+        disabled=len(images) == 0,
+        label="Process and detect nails from uploaded images",
     )
 
     if "result_images" in st.session_state:
-        show_results()
+        show_prediction_results()
 
 
 def show_images():
+    """
+    Callback for button `afficher les images`
+    """
     images = st.session_state["images"]
     if images:
         cols = st.columns(len(images))
@@ -45,7 +76,10 @@ def show_images():
             col.image(image, caption="Uploaded Image.", use_column_width=True)
 
 
-def show_results():
+def show_prediction_results():
+    """
+    Update GUI with modified images that show predictions.
+    """
     for img_base64 in st.session_state["result_images"]:
         st.markdown(
             f'<img src="data:image/jpeg;base64,{img_base64}">',
@@ -54,6 +88,13 @@ def show_results():
 
 
 def on_images_uploaded():
+    """
+    For each uploaded image:
+
+    1. Call roboflow model
+    2. draw prediction from inference response predictions
+    3. save result to `result_images` list
+    """
 
     uploaded_files = st.session_state["images"]
     if uploaded_files is not None:
