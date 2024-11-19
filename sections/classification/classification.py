@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
-from sklearn.model_selection import train_test_split, KFold, StratifiedKFold, cross_val_score
+from sklearn.model_selection import train_test_split, KFold, StratifiedKFold, cross_val_score, GridSearchCV
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.svm import SVC
@@ -89,51 +89,55 @@ def classification_page():
 
             # Bouton pour démarrer l'entraînement
             if st.button("Démarrer l'entraînement"):
-                # Initialisation des modèles
+                # Initialisation des modèles et grilles de paramètres
                 models = {
-                    "Logistic Regression": LogisticRegression(max_iter=1000),
-                    "Random Forest": RandomForestClassifier(n_estimators=100, random_state=42),
-                    "SVM": SVC(random_state=42)
+                    "Logistic Regression": (LogisticRegression(max_iter=1000), {'C': [0.1, 1, 10]}),
+                    "Random Forest": (RandomForestClassifier(random_state=42), {'n_estimators': [50, 100, 200]}),
+                    "SVM": (SVC(random_state=42), {'C': [0.1, 1, 10], 'kernel': ['linear', 'rbf']})
                 }
 
                 model_results = {}
 
-                # Evaluer chaque modèle avec la validation croisée
-                for model_name, model in models.items():
-                    mean_accuracy, std_accuracy = entrainer_et_afficher_resultats(model, X_selected, y, cv_choice, n_splits, model_name)
-                    model_results[model_name] = {"mean": mean_accuracy, "std": std_accuracy}
+                # Evaluer chaque modèle avec la validation croisée et GridSearchCV
+                for model_name, (model, param_grid) in models.items():
+                    mean_accuracy, std_accuracy, best_params = entrainer_et_afficher_resultats(model, X_selected, y, cv_choice, n_splits, model_name, param_grid)
+                    model_results[model_name] = {"mean": mean_accuracy, "std": std_accuracy, "best_params": best_params}
 
                 # Comparaison des modèles
                 if model_results:
                     st.write("Comparaison des performances des modèles :")
                     model_comparison_df = pd.DataFrame(model_results).T
-                    model_comparison_df.columns = ['Précision moyenne', 'Écart-type']
+                    model_comparison_df.columns = ['Précision moyenne', 'Écart-type', 'Meilleurs paramètres']
                     st.write(model_comparison_df)
 
                     # Affichage du meilleur modèle
-                    best_model_name = min(model_results, key=lambda x: model_results[x]["mean"])
+                    best_model_name = max(model_results, key=lambda x: model_results[x]["mean"])
                     st.write(f"Le meilleur modèle est : {best_model_name} avec une précision moyenne de {model_results[best_model_name]['mean']:.2f}.")
+                    st.write(f"Meilleurs paramètres pour {best_model_name} : {model_results[best_model_name]['best_params']}")
 
-def entrainer_et_afficher_resultats(model, X, y, cv_choice, n_splits, model_name):
+def entrainer_et_afficher_resultats(model, X, y, cv_choice, n_splits, model_name, param_grid):
     if cv_choice == "KFold":
         cv = KFold(n_splits=n_splits, shuffle=True, random_state=42)
     elif cv_choice == "StratifiedKFold":
         cv = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=42)
 
-    # Cross-validation
-    cv_results = cross_val_score(model, X, y, cv=cv, scoring='accuracy')
+    # GridSearchCV
+    grid_search = GridSearchCV(model, param_grid, cv=cv, scoring='accuracy', n_jobs=-1)
+    grid_search.fit(X, y)
     
+    # Meilleurs paramètres et score
+    best_params = grid_search.best_params_
+    best_score = grid_search.best_score_
+
     # Affichage des résultats avec le nom du modèle
     st.write(f"Résultats de la validation croisée ({cv_choice}) pour le modèle {model_name} :")
-    st.write(cv_results)
-    st.write(f"Précision moyenne : {cv_results.mean():.2f}")
-    st.write(f"Écart-type de la précision : {cv_results.std():.2f}")
+    st.write(f"Meilleurs paramètres : {best_params}")
+    st.write(f"Meilleur score : {best_score:.2f}")
 
-    # Entraînement final sur l'ensemble complet
-    model.fit(X, y)
+    # Entraînement final sur l'ensemble complet avec les meilleurs paramètres
+    best_model = grid_search.best_estimator_
+    best_model.fit(X, y)
     
-    # Prédictions sur l'ensemble de test
     st.write(f"Entraînement final sur l'ensemble complet des données pour le modèle {model_name} effectué.")
 
-    return cv_results.mean(), cv_results.std()
-
+    return best_score, grid_search.cv_results_['std_test_score'][grid_search.best_index_], best_params
