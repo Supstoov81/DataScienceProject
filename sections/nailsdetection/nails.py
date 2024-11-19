@@ -50,7 +50,7 @@ def nail_page():
         "Afficher les images",
         on_click=show_images,
         disabled=len(images) == 0,
-        label="show uploaded images",
+        # label="show uploaded images",
     )
 
     # 2. Call roboflow api on click (on_click callback)
@@ -58,7 +58,7 @@ def nail_page():
         "Détecter les ongles",
         on_click=on_images_uploaded,
         disabled=len(images) == 0,
-        label="Process and detect nails from uploaded images",
+        # label="Process and detect nails from uploaded images",
     )
 
     if "result_images" in st.session_state:
