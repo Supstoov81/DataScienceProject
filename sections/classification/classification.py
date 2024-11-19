@@ -1,6 +1,4 @@
 import streamlit as st
-<<<<<<< HEAD
-=======
 import pandas as pd
 import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
@@ -8,13 +6,10 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score, confusion_matrix, classification_report
 from .dataCleaner import clean_data
->>>>>>> origin/mattbib
 
 def classification_page():
     st.header("Bienvenue")
     st.caption("Bienvenue dans la classification")
-<<<<<<< HEAD
-=======
     
     # Chemin vers le fichier CSV
     file_path = r"C:\Users\mattb\Documents\projet\data\cleaned_Vin.csv"
@@ -138,4 +133,3 @@ def classification_page():
             st.write("Erreur : Le modèle n'a pas été correctement entraîné.")
     else:
         st.write("Erreur lors du nettoyage des données.")
->>>>>>> origin/mattbib
