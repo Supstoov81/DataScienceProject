@@ -1,4 +1,5 @@
 import pandas as pd
+import os
 import streamlit as st
 import seaborn as sns
 import matplotlib.pyplot as plt
@@ -13,11 +14,13 @@ def regression_page():
     st.caption("Sélection des variables explicatives basées sur la corrélation")
 
     # Charger le jeu de données
-    data_path = "C:/Users/lenovo/Desktop/FormationDigi/DataScienceProject/data/diabetes_cleaned.csv"
+    csv_path = "data/diabetes_cleaned.csv"
+    path = os.path.join(os.getcwd(), csv_path)
+    # data_path = "C:/Users/lenovo/Desktop/FormationDigi/DataScienceProject/data/diabetes_cleaned.csv"
     try:
-        data = pd.read_csv(data_path)
+        data = pd.read_csv(path)
     except FileNotFoundError:
-        st.error(f"Le fichier {data_path} n'a pas été trouvé.")
+        st.error(f"Le fichier {path} n'a pas été trouvé.")
         return
 
     st.write("Aperçu des données :")
@@ -29,7 +32,11 @@ def regression_page():
         return
 
     # Définir la colonne cible
-    target_col = st.selectbox("Sélectionnez la colonne cible pour la régression :", data.columns, key="target_col_1")
+    target_col = st.selectbox(
+        "Sélectionnez la colonne cible pour la régression :",
+        data.columns,
+        key="target_col_1",
+    )
     X = data.drop(columns=[target_col])
     y = data[target_col]
 
@@ -54,7 +61,9 @@ def regression_page():
             corr, _ = pearsonr(X[col], y)
             correlation_dict[col] = corr
         except Exception as e:
-            st.warning(f"Impossible de calculer la corrélation pour **{col}** : {str(e)}")
+            st.warning(
+                f"Impossible de calculer la corrélation pour **{col}** : {str(e)}"
+            )
 
     # Trier les résultats par ordre croissant de la corrélation
     sorted_corr = sorted(correlation_dict.items(), key=lambda item: item[1])
@@ -79,19 +88,29 @@ def regression_page():
                 f_stat, p_val = f_oneway(*groups)
 
                 # Afficher les résultats
-                st.write(f"ANOVA entre **{col}** et **{target_col}** : F-stat={f_stat:.2f}, p-val={p_val:.4f}")
+                st.write(
+                    f"ANOVA entre **{col}** et **{target_col}** : F-stat={f_stat:.2f}, p-val={p_val:.4f}"
+                )
 
                 # Interprétation des résultats
                 if p_val < 0.05:
-                    st.write(f"Il y a une différence significative entre les groupes pour **{col}**.")
+                    st.write(
+                        f"Il y a une différence significative entre les groupes pour **{col}**."
+                    )
                 else:
-                    st.write(f"Aucune différence significative entre les groupes pour **{col}**.")
+                    st.write(
+                        f"Aucune différence significative entre les groupes pour **{col}**."
+                    )
             except Exception as e:
                 st.warning(f"Erreur lors du test ANOVA pour **{col}** : {str(e)}")
 
     # Diviser le jeu de données en train et test
-    test_size = st.slider("Proportion de test (en %)", 10, 50, 30, key="test_size_slider") / 100
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size, random_state=42)
+    test_size = (
+        st.slider("Proportion de test (en %)", 10, 50, 30, key="test_size_slider") / 100
+    )
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=test_size, random_state=42
+    )
 
     # Instanciation du modèle de régression
     model = LinearRegression()
