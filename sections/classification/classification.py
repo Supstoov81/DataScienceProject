@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -133,3 +134,5 @@ def classification_page():
             st.write("Erreur : Le modèle n'a pas été correctement entraîné.")
     else:
         st.write("Erreur lors du nettoyage des données.")
+=======
+>>>>>>> 991daaafc824c5322561c53528dd22b7ffc56f69
