@@ -7,7 +7,8 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.svm import SVC
 from sklearn.metrics import accuracy_score
-from .dataCleaner import clean_data 
+from sklearn.preprocessing import LabelEncoder
+from .dataCleaner import clean_data
 
 def classification_page():
     st.header("Bienvenue dans notre modèle de prédiction")
@@ -76,20 +77,24 @@ def classification_page():
             correlation_data = X_selected.copy()
             correlation_data['target'] = y
 
-            # Filtrer les colonnes non numériques
-            correlation_data = correlation_data.select_dtypes(include=['number'])
+            # Encodage de la colonne target (avant la création de la matrice de corrélation)
+            if df_cleaned['target'].dtype == 'object':
+                label_encoder = LabelEncoder()
+                df_cleaned['target'] = label_encoder.fit_transform(df_cleaned['target'])
 
+            # Filtrer les colonnes sélectionnées et la cible
+            correlation_data = df_cleaned[selected_features.tolist() + ['target']]
+
+            # Calculer la matrice de corrélation
             correlation_matrix = correlation_data.corr()
 
-            if 'target' in correlation_matrix.columns:
-                correlation_with_target = correlation_matrix['target'].drop('target').sort_values(ascending=False)
-                st.write("Corrélation entre les features sélectionnées et la cible :")
-                st.write(correlation_with_target)
+            # Extraire uniquement les corrélations avec la cible
+            correlation_with_target = correlation_matrix[['target']].drop('target')
 
-            # Affichage de la heatmap des corrélations
-            st.write("Heatmap des corrélations :")
-            plt.figure(figsize=(10, 6))
-            sns.heatmap(correlation_matrix, annot=True, cmap="coolwarm", fmt=".2f")
+            # Afficher les corrélations dans une heatmap
+            st.write("Heatmap des corrélations entre les features sélectionnées et la colonne target :")
+            plt.figure(figsize=(8, 6))
+            sns.heatmap(correlation_with_target, annot=True, cmap="coolwarm", cbar=True)
             st.pyplot(plt)
 
             # Division des données
