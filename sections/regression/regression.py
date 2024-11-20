@@ -40,6 +40,11 @@ def regression_page():
     st.write("Aperçu des données :")
     st.write(data.head())
 
+    # Vérification de la présence de colonnes
+    if data.empty:
+        st.error("Le jeu de données est vide.")
+        return
+
     # Définir la colonne cible
 
     target = st.selectbox(
@@ -135,16 +140,17 @@ def regression_page():
     corr_matrix = data.corr()
     st.write(corr_matrix)
 
-    # Heatmap de corrélation
+    # Visualisation avec Seaborn
     st.subheader("Carte de corrélation (heatmap)")
     plt.figure(figsize=(10, 6))
     sns.heatmap(corr_matrix, annot=True, cmap="coolwarm", fmt=".2f")
     st.pyplot(plt)
     plt.close()
 
-    # Corrélation avec la cible
+    # Test de corrélation pour chaque colonne avec la cible
     st.subheader("Corrélation avec la cible")
     correlation_dict = {}
+
     for col in X.columns:
         try:
             corr, _ = pearsonr(X[col], y)
@@ -156,8 +162,10 @@ def regression_page():
 
     # Trier les résultats par ordre croissant de la corrélation
     sorted_corr = sorted(correlation_dict.items(), key=lambda item: item[1])
+
+    # Afficher les résultats triés
     for col, corr in sorted_corr:
-        st.write(f"Corrélation entre **{col}** et **{target}** : {corr:.2f}")
+        st.write(f"Corrélation entre **{col}** et **{target_col}** : {corr:.2f}")
 
     # Test ANOVA pour les variables catégorielles
     st.subheader("Test ANOVA pour les variables catégorielles")
@@ -174,10 +182,13 @@ def regression_page():
             f"ANOVA entre **{col}** et **{target}** : F-stat={f_stat:.2f}, p-val={p_val:.4f}"
         )
 
-    # Validation croisée (5-fold)
-    st.subheader("Validation croisée (5-fold)")
-    kfold = KFold(n_splits=5, shuffle=True, random_state=42)
-    mse_scores = []
+    if categorical_cols.empty:
+        st.write("Aucune variable catégorielle trouvée pour le test ANOVA.")
+    else:
+        for col in categorical_cols:
+            try:
+                # Séparer les données de la cible pour chaque catégorie
+                groups = [y[X[col] == val] for val in X[col].dropna().unique()]
 
     for train_index, val_index in kfold.split(X_scaled):
         # Séparer les données en train et validation
