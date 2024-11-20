@@ -1,4 +1,3 @@
-
 import streamlit as st
 import io
 import base64
@@ -8,7 +7,6 @@ from inference_sdk import InferenceHTTPClient
 CLIENT = InferenceHTTPClient(
     api_url="https://detect.roboflow.com", api_key="1yftlULBWV4Wy0xGw58x"
 )
-
 
 
 def nail_page():
