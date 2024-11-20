@@ -87,12 +87,15 @@ def classification_page():
             cv_choice = st.selectbox("Choisissez le type de validation croisée", ["KFold", "StratifiedKFold"])
             n_splits = st.slider("Nombre de plis pour la validation croisée", 2, 10, 5)
 
+            # Sélectionner le nombre d'arbres pour RandomForest
+            n_estimators = st.slider("Sélectionner le nombre d'arbres pour Random Forest", 10, 500, 100)
+
             # Bouton pour démarrer l'entraînement
             if st.button("Démarrer l'entraînement"):
                 # Initialisation des modèles et grilles de paramètres
                 models = {
                     "Logistic Regression": (LogisticRegression(max_iter=1000), {'C': [0.1, 1, 10]}),
-                    "Random Forest": (RandomForestClassifier(random_state=42), {'n_estimators': [50, 100, 200]}),
+                    "Random Forest": (RandomForestClassifier(random_state=42, n_estimators=n_estimators), {'max_depth': [None, 10, 20, 30]}),
                     "SVM": (SVC(random_state=42), {'C': [0.1, 1, 10], 'kernel': ['linear', 'rbf']})
                 }
 
