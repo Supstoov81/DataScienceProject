@@ -1,12 +1,12 @@
 import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
-from sklearn.model_selection import GridSearchCV, KFold, StratifiedKFold, train_test_split
+from sklearn.model_selection import train_test_split, KFold, StratifiedKFold, GridSearchCV
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import accuracy_score, confusion_matrix, classification_report
-from .dataCleaner import clean_data
-
+from sklearn.svm import SVC
+from sklearn.metrics import accuracy_score, classification_report
+from .dataCleaner import clean_data  # Assurez-vous que la fonction clean_data est bien définie dans le fichier 'dataCleaner.py'
 
 def classification_page():
     st.header("Bienvenue dans notre modèle de prédiction")
@@ -87,15 +87,12 @@ def classification_page():
             cv_choice = st.selectbox("Choisissez le type de validation croisée", ["KFold", "StratifiedKFold"])
             n_splits = st.slider("Nombre de plis pour la validation croisée", 2, 10, 5)
 
-            # Sélectionner le nombre d'arbres pour RandomForest
-            n_estimators = st.slider("Sélectionner le nombre d'arbres pour Random Forest", 10, 500, 100)
-
             # Bouton pour démarrer l'entraînement
             if st.button("Démarrer l'entraînement"):
                 # Initialisation des modèles et grilles de paramètres
                 models = {
                     "Logistic Regression": (LogisticRegression(max_iter=1000), {'C': [0.1, 1, 10]}),
-                    "Random Forest": (RandomForestClassifier(random_state=42, n_estimators=n_estimators), {'max_depth': [None, 10, 20, 30]}),
+                    "Random Forest": (RandomForestClassifier(random_state=42), {'n_estimators': [50, 100, 200]}),
                     "SVM": (SVC(random_state=42), {'C': [0.1, 1, 10], 'kernel': ['linear', 'rbf']})
                 }
 
@@ -103,44 +100,67 @@ def classification_page():
 
                 # Evaluer chaque modèle avec la validation croisée et GridSearchCV
                 for model_name, (model, param_grid) in models.items():
-                    mean_accuracy, std_accuracy, best_params = entrainer_et_afficher_resultats(model, X_selected, y, cv_choice, n_splits, model_name, param_grid)
-                    model_results[model_name] = {"mean": mean_accuracy, "std": std_accuracy, "best_params": best_params}
+                    mean_accuracy, std_accuracy, best_params, best_score = entrainer_et_afficher_resultats(model, X_selected, y, cv_choice, n_splits, model_name, param_grid)
+                    model_results[model_name] = {
+                        "mean": mean_accuracy, 
+                        "std": std_accuracy, 
+                        "best_params": best_params, 
+                        "best_score": best_score
+                    }
 
                 # Comparaison des modèles
                 if model_results:
                     st.write("Comparaison des performances des modèles :")
                     model_comparison_df = pd.DataFrame(model_results).T
-                    model_comparison_df.columns = ['Précision moyenne', 'Écart-type', 'Meilleurs paramètres']
+                    model_comparison_df.columns = ['Précision moyenne', 'Écart-type', 'Meilleurs paramètres', 'Meilleur score']
                     st.write(model_comparison_df)
 
                     # Affichage du meilleur modèle
-                    best_model_name = max(model_results, key=lambda x: model_results[x]["mean"])
+                    best_model_name = max(model_results, key=lambda x: model_results[x]["best_score"])
                     st.write(f"Le meilleur modèle est : {best_model_name} avec une précision moyenne de {model_results[best_model_name]['mean']:.2f}.")
                     st.write(f"Meilleurs paramètres pour {best_model_name} : {model_results[best_model_name]['best_params']}")
+                    st.write(f"Meilleur score pour {best_model_name} : {model_results[best_model_name]['best_score']:.2f}")
+
+                    # Affichage de la classification report
+                    model = models[best_model_name][0].set_params(**model_results[best_model_name]["best_params"])
+                    model.fit(X_train, y_train)
+                    y_pred = model.predict(X_test)
+                    st.write("Classification Report pour le meilleur modèle :")
+                    st.write(classification_report(y_test, y_pred))
+
+                    # Visualisation des résultats
+                    fig, ax = plt.subplots()
+                    model_comparison_df['Précision moyenne'].plot(kind='bar', ax=ax)
+                    ax.set_title("Comparaison des modèles")
+                    ax.set_ylabel("Précision moyenne")
+                    st.pyplot(fig)
 
 def entrainer_et_afficher_resultats(model, X, y, cv_choice, n_splits, model_name, param_grid):
+    # Définir la validation croisée selon le type choisi
     if cv_choice == "KFold":
         cv = KFold(n_splits=n_splits, shuffle=True, random_state=42)
     elif cv_choice == "StratifiedKFold":
         cv = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=42)
 
-    # GridSearchCV
+    # Initialiser GridSearchCV pour la recherche des meilleurs paramètres
     grid_search = GridSearchCV(model, param_grid, cv=cv, scoring='accuracy', n_jobs=-1)
     grid_search.fit(X, y)
     
-    # Meilleurs paramètres et score
+    # Récupérer les meilleurs paramètres et le meilleur score
     best_params = grid_search.best_params_
     best_score = grid_search.best_score_
 
-    # Affichage des résultats avec le nom du modèle
-    st.write(f"Résultats de la validation croisée ({cv_choice}) pour le modèle {model_name} :")
+    # Calculer la précision moyenne et l'écart-type des résultats de validation croisée
+    mean_accuracy = grid_search.cv_results_['mean_test_score'].mean()
+    std_accuracy = grid_search.cv_results_['std_test_score'].mean()
+
+    # Affichage des résultats
+    st.write(f"Résultats de la validation croisée pour le modèle {model_name}:")
     st.write(f"Meilleurs paramètres : {best_params}")
     st.write(f"Meilleur score : {best_score:.2f}")
+    st.write(f"Précision moyenne : {mean_accuracy:.2f}")
+    st.write(f"Écart-type de la précision : {std_accuracy:.2f}")
 
-    # Entraînement final sur l'ensemble complet avec les meilleurs paramètres
-    best_model = grid_search.best_estimator_
-    best_model.fit(X, y)
-    
-    st.write(f"Entraînement final sur l'ensemble complet des données pour le modèle {model_name} effectué.")
+    # Retourner les valeurs demandées
+    return mean_accuracy, std_accuracy, best_params, best_score
 
-    return best_score, grid_search.cv_results_['std_test_score'][grid_search.best_index_], best_params
