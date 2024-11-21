@@ -48,4 +48,5 @@ inference-sdk==0.9.17
 seaborn==0.13.2
 scikit-learn==1.5.2
 unidecode==1.3.8
+opencv-python-headless==4.10.0.82
 
