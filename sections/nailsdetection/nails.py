@@ -54,6 +54,12 @@ def nail_page():
         # label="show uploaded images",
     )
 
+    # grab user input for confidence threshold
+    user_threshold = st.number_input(
+        "Confidence Threshold", value=0.90, step=0.01, max_value=1.0
+    )
+    st.session_state["confidence_threshold"] = user_threshold
+
     # 2. Call roboflow api on click (on_click callback)
     st.button(
         "Détecter les ongles",
@@ -101,12 +107,18 @@ def on_images_uploaded():
     if uploaded_files is not None:
         results = []
         result_images = []
+
         for uploaded_file in uploaded_files:
             image = Image.open(uploaded_file)
             img_bytes = io.BytesIO()
             image.save(img_bytes, format="JPEG")
             img_bytes = img_bytes.getvalue()
             img_base64 = base64.b64encode(img_bytes).decode()
+
+            threshold = st.session_state["confidence_threshold"]
+
+            if threshold:
+                CLIENT.configure(InferenceConfiguration(confidence_threshold=threshold))
 
             response = CLIENT.infer(img_base64, model_id="nail-detection-iqigg/1")
             results.append(response)
