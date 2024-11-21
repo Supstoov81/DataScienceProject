@@ -28,7 +28,7 @@ Ce projet est une application interactive basée sur Streamlit qui regroupe plus
   - Précision (Accuracy)
   - Matrice de confusion
   - Rapport de classification.
-- Graphique montrant l'évolution de la précision en fonction des itérations d'entraînement.
+- Graphique heatmap montrant la corrélation entre les features choisies et la target
 
 ### 3. Détection d'ongles => Kieran SWEETMAN
 **But** : Détecter des ongles dans des images via un modèle préentraîné hébergé sur Roboflow.
