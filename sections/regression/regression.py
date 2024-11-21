@@ -18,7 +18,7 @@ from joblib import dump, load
 
 
 def regression_page():
-    st.header("Playground de Régression")
+    st.header("Bienvenue ")
     st.caption("Analyse exploratoire, sélection des variables et évaluation d'un modèle de régression")
 
     # Charger le jeu de données
