@@ -3,8 +3,8 @@ Ce projet est une application interactive basée sur Streamlit qui regroupe plus
 
 ## Modules
 
-### 1. Régression
-**But** : Prédire une variable cible continue à partir de données médicales liées au diabète.
+### 1. Régression => Cheikh NGOM
+**But** : Prédire une variable cible continue à partir de données médicales liées au diabète 
 
 **Caractéristiques principales :**
 - Chargement et prétraitement des données.
@@ -17,7 +17,7 @@ Ce projet est une application interactive basée sur Streamlit qui regroupe plus
 - Résultats comparés des métriques : R², MSE, Erreur Médiane.
 - Hyperparamètres ajustables via la barre latérale (nombre d'arbres, profondeur, etc.).
 
-### 2. Classification
+### 2. Classification => Mourad ATTBIB
 **But** : Classifier des données d'échantillons de vin à l'aide de modèles de machine learning.
 
 **Caractéristiques principales :**
@@ -26,11 +26,10 @@ Ce projet est une application interactive basée sur Streamlit qui regroupe plus
 - Création d'un modèle de classification basé sur la régression logistique.
 - Affichage des résultats :
   - Précision (Accuracy)
-  - Matrice de confusion
   - Rapport de classification.
-- Graphique montrant l'évolution de la précision en fonction des itérations d'entraînement.
+- Graphique heatmap montrant la corrélation entre les features choisies et la target
 
-### 3. Détection d'ongles
+### 3. Détection d'ongles => Kieran SWEETMAN
 **But** : Détecter des ongles dans des images via un modèle préentraîné hébergé sur Roboflow.
 
 **Caractéristiques principales :**
