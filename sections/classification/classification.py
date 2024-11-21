@@ -156,16 +156,12 @@ def classification_page():
                 if model_results:
                     st.write("Comparaison des performances des modèles :")
                     results_df = pd.DataFrame(model_results)
-                    for index, row in results_df.iterrows():
-                        st.write(f"### {row['Modèle']}")
-                        st.write(f"- **Précision moyenne :** {row['Précision moyenne']:.2f}")
-                        st.write(f"- **Écart-type :** {row['Écart-type']:.2f}")
-                        st.write(f"- **Meilleur paramètre :** {row['Meilleur paramètre']}")
-                        st.write(f"- **Meilleur score :** {row['Meilleur score']:.2f}")
-                        st.write(f"- **Meilleur index :** {row['Meilleur index']}")
-                    st.write(results_df)
-                    
-                    
+                    st.write(results_df)  # Afficher le tableau des résultats des modèles
+
+                    best_model = max(model_results, key=lambda x: x["Précision moyenne"])
+                    best_model_name = best_model["Modèle"]
+                    st.write(f"Le meilleur modèle est : {best_model_name} avec une précision moyenne de "
+                             f"{best_model['Précision moyenne']:.2f}.")
 
 def evaluate_model(model, X, y, cv_choice, n_splits, model_name):
     if cv_choice == "KFold":
