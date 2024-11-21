@@ -68,8 +68,27 @@ def nail_page():
         # label="Process and detect nails from uploaded images",
     )
 
-    if "result_images" in st.session_state:
-        show_prediction_results()
+    session_result_images = st.session_state.get("result_images", None)
+    if session_result_images:
+        st.markdown(
+            """
+            <script>
+            const targetDiv = document.querySelector('div[data-testid="stHorizontalBlock"]');
+            if (targetDiv) {
+                targetDiv.style.overflowX = 'scroll';
+                targetDiv.style.whiteSpace = 'nowrap';
+            }
+            </script>
+            """,
+            unsafe_allow_html=True,
+        )
+        cols = st.columns(len(session_result_images), gap="medium")
+
+        for col, img_base64 in zip(cols, session_result_images):
+            image = Image.open(io.BytesIO(base64.b64decode(img_base64)))
+            col.image(image, use_column_width=True)
+
+        st.markdown("</div>", unsafe_allow_html=True)
 
 
 def show_images():
@@ -81,17 +100,6 @@ def show_images():
         cols = st.columns(len(images))
         for col, image in zip(cols, images):
             col.image(image, caption="Uploaded Image.", use_column_width=True)
-
-
-def show_prediction_results():
-    """
-    Update GUI with modified images that show predictions.
-    """
-    for img_base64 in st.session_state["result_images"]:
-        st.markdown(
-            f'<img src="data:image/jpeg;base64,{img_base64}">',
-            unsafe_allow_html=True,
-        )
 
 
 def on_images_uploaded():
