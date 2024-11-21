@@ -1,135 +1,189 @@
+import os
 import streamlit as st
 import pandas as pd
+import seaborn as sns
 import matplotlib.pyplot as plt
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split, KFold, StratifiedKFold, cross_val_score, GridSearchCV
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import accuracy_score, confusion_matrix, classification_report
+from sklearn.svm import SVC
+from sklearn.metrics import accuracy_score
+from sklearn.preprocessing import LabelEncoder
 from .dataCleaner import clean_data
 
 def classification_page():
-    st.header("Bienvenue")
-    st.caption("Bienvenue dans la classification")
-    
-    # Chemin vers le fichier CSV
-    file_path = r"C:\Users\mattb\Documents\projet\data\cleaned_Vin.csv"
+    st.header("Bienvenue dans notre modèle de prédiction")
+    st.caption("Classification des vins avec traitement des données et sélection de modèles")
 
-    # Appel de la fonction de nettoyage des données
-    df_cleaned = clean_data(file_path)
+    tabs = st.tabs(["Traitement", "Visualisation", "Entrainement et Evaluation"])
 
-    if df_cleaned is not None:
-        st.write("Aperçu des données : ")
-        st.write(df_cleaned.head())
-        
-        # Préparation des données
-        # Suppression de la colonne 'Index'
-        if 'Index' in df_cleaned.columns:
-            df_cleaned = df_cleaned.drop(columns=['Index'])
-        
-        X = df_cleaned.drop(columns=['target'])
-        y = df_cleaned['target']
-        
-        # Sélection de features avec RandomForest
-        rf = RandomForestClassifier(n_estimators=100, random_state=42)
-        rf.fit(X, y)
-        
-        # Importance des features
-        feature_importances = pd.Series(rf.feature_importances_, index=X.columns)
-        st.write("Importance des features : ")
-        st.write(feature_importances)
-        
-        # Sélection des features les plus importantes
-        threshold = 0.05  # Seuil à ajuster
-        selected_features = feature_importances[feature_importances > threshold].index
-        
-        st.write("Features sélectionnées : ")
-        st.write(selected_features)
-        
-        # Utiliser uniquement les features sélectionnées
-        X_selected = X[selected_features]
-        
-        # Division des données en ensemble d'entraînement et de test avec stratification
-        X_train, X_test, y_train, y_test = train_test_split(X_selected, y, test_size=0.3, random_state=42, stratify=y)
-        
-        # Création du modèle LogisticRegression
-        model = LogisticRegression(max_iter=1000)
-        
-        # Initialisation des listes pour stocker la précision
-        train_accuracies = []
-        test_accuracies = []
-        
-        # Vérification si les données d'entraînement contiennent plusieurs classes
-        unique_classes_train = y_train.unique()
-        if len(unique_classes_train) < 2:
-            st.write(f"Erreur : L'échantillon d'entraînement contient une seule classe: {unique_classes_train[0]}.")
-            return
+    # Onglet Traitement
+    with tabs[0]:
+        st.subheader("Traitement des données")
 
-        # Entraînement du modèle avec suivi de la précision à chaque itération
-        for i in range(1, 101):  # Itération sur un nombre d'itérations maximum de 100
-            # Sélectionner un sous-ensemble croissant des données d'entraînement
-            subset_size = int(len(X_train) * (i / 100))  # Augmenter progressivement la taille de l'échantillon
-            
-            # Si la taille du sous-ensemble est trop petite, on commence avec un sous-ensemble plus grand
-            if subset_size < 10:
-                subset_size = 10  # Vous pouvez ajuster ce seuil selon la taille de votre ensemble de données
+        # Chargement des données
+        file_path = st.text_input("Chemin vers le fichier CSV :", "data/cleaned_Vin.csv")
+        path = os.path.join(os.getcwd(), file_path)
+        if file_path:
+            df_cleaned = clean_data(path)
 
-            # S'assurer qu'on a au moins deux classes dans le sous-ensemble
-            if len(y_train[:subset_size].unique()) < 2:
-                st.write(f"Erreur : L'échantillon d'entraînement pour l'itération {i} contient une seule classe.")
-                break
-            
-            # Entraînement du modèle sur le sous-ensemble des données
-            model.fit(X_train[:subset_size], y_train[:subset_size])  # Entraîner sur un sous-ensemble des données
-            
-            # Prédictions
-            train_pred = model.predict(X_train)
-            test_pred = model.predict(X_test)
-            
-            # Calcul de la précision
-            train_acc = accuracy_score(y_train, train_pred)
-            test_acc = accuracy_score(y_test, test_pred)
-            
-            # Ajout des résultats dans les listes
-            train_accuracies.append(train_acc)
-            test_accuracies.append(test_acc)
-            
-            # Vérifier si des précisions ont été ajoutées
-            if i % 10 == 0:  # Afficher chaque 10e itération
-                st.write(f"Iteration {i}, Précision entraînement : {train_acc:.2f}, Précision test : {test_acc:.2f}")
-        
-        # Vérifier que les listes de précisions ne sont pas vides avant de tracer
-        if len(train_accuracies) > 0 and len(test_accuracies) > 0:
-            # Affichage des courbes de précision pour l'entraînement et le test
-            st.write("Graphique de la précision d'entraînement et de test :")
-            plt.figure(figsize=(10, 6))
-            plt.plot(range(1, len(train_accuracies) + 1), train_accuracies, label='Précision entraînement')
-            plt.plot(range(1, len(test_accuracies) + 1), test_accuracies, label='Précision test', linestyle='--')
-            plt.xlabel('Nombre d\'itérations')
-            plt.ylabel('Précision')
-            plt.title('Précision du modèle d\'apprentissage')
-            plt.legend()
+            if df_cleaned is not None:
+                st.write("Aperçu des données :")
+                st.write(df_cleaned.head())
+
+                # Gestion des valeurs manquantes
+                missing_value_option = st.selectbox("Choisissez comment traiter les valeurs manquantes",
+                                                    ["Supprimer les lignes", "Supprimer les colonnes",
+                                                     "Remplir avec une valeur spécifique",
+                                                     "Remplir avec la moyenne",
+                                                     "Remplir avec la médiane"])
+
+                if missing_value_option == "Remplir avec une valeur spécifique":
+                    fill_value = st.text_input("Entrez la valeur pour remplacer les valeurs manquantes :")
+
+                if missing_value_option == "Supprimer les lignes":
+                    df_cleaned = df_cleaned.dropna()
+                elif missing_value_option == "Supprimer les colonnes":
+                    df_cleaned = df_cleaned.dropna(axis=1)
+                elif missing_value_option == "Remplir avec une valeur spécifique" and fill_value:
+                    df_cleaned = df_cleaned.fillna(fill_value)
+                elif missing_value_option == "Remplir avec la moyenne":
+                    numeric_cols = df_cleaned.select_dtypes(include=['number']).columns
+                    df_cleaned[numeric_cols] = df_cleaned[numeric_cols].fillna(df_cleaned[numeric_cols].mean())
+                elif missing_value_option == "Remplir avec la médiane":
+                    numeric_cols = df_cleaned.select_dtypes(include=['number']).columns
+                    df_cleaned[numeric_cols] = df_cleaned[numeric_cols].fillna(df_cleaned[numeric_cols].median())
+
+                st.write("Données après traitement des valeurs manquantes :")
+                st.write(df_cleaned.head())
+
+                # Suppression de colonnes inutiles
+                if 'Index' in df_cleaned.columns:
+                    df_cleaned = df_cleaned.drop(columns=['Index'])
+
+                X = df_cleaned.drop(columns=['target'])
+                y = df_cleaned['target']
+
+                # Sélection des features importantes
+                rf = RandomForestClassifier(n_estimators=100, random_state=42)
+                rf.fit(X, y)
+                feature_importances = pd.Series(rf.feature_importances_, index=X.columns)
+
+                st.write("Importance des features :")
+                st.write(feature_importances)
+
+                threshold = st.slider("Seuil pour sélectionner les features importantes", 0.0, 1.0, 0.05)
+                selected_features = feature_importances[feature_importances > threshold].index
+
+                st.write("Features sélectionnées :")
+                st.write(selected_features)
+
+                X_selected = X[selected_features]
+
+    # Onglet Visualisation
+    with tabs[1]:
+
+        # Corrélation avec la cible
+        if file_path and 'target' in df_cleaned:
+            correlation_data = X_selected.copy()
+            correlation_data['target'] = y
+
+            # Encodage de la colonne target (avant la création de la matrice de corrélation)
+            if df_cleaned['target'].dtype == 'object':
+                label_encoder = LabelEncoder()
+                df_cleaned['target'] = label_encoder.fit_transform(df_cleaned['target'])
+
+            # Filtrer les colonnes sélectionnées et la cible
+            correlation_data = df_cleaned[selected_features.tolist() + ['target']]
+
+            # Calculer la matrice de corrélation
+            correlation_matrix = correlation_data.corr()
+
+            # Extraire uniquement les corrélations avec la cible
+            correlation_with_target = correlation_matrix[['target']].drop('target')
+
+            # Afficher les corrélations dans une heatmap
+            st.write("Heatmap des corrélations entre les features sélectionnées et la colonne target :")
+            plt.figure(figsize=(8, 6))
+            sns.heatmap(correlation_with_target, annot=True, cmap="coolwarm", cbar=True)
             st.pyplot(plt)
-        else:
-            st.write("Aucune précision n'a été enregistrée. Vérifiez vos itérations d'entraînement.")
-        
-        # Prédiction finale et évaluation
-        # S'assurer que le modèle a été formé avant de prédire
-        if hasattr(model, 'coef_'):
-            y_pred = model.predict(X_test)
-            # Précision finale
-            accuracy = accuracy_score(y_test, y_pred)
-            st.write(f"Précision du modèle sur les données de test : {accuracy:.2f}")
-        
-            # Matrice de confusion
-            cm = confusion_matrix(y_test, y_pred)
-            st.write("Matrice de confusion :")
-            st.write(cm)
-            
-            # Rapport de classification
-            report = classification_report(y_test, y_pred, output_dict=True)
-            st.write("Rapport de classification :")
-            st.write(report)
-        else:
-            st.write("Erreur : Le modèle n'a pas été correctement entraîné.")
+
+    # Onglet Évaluation
+    with tabs[2]:
+
+        # Division des données
+        if file_path:
+            test_size = st.slider("Taille de l'ensemble de test", 0.1, 0.5, 0.3)
+            X_train, X_test, y_train, y_test = train_test_split(X_selected, y, test_size=test_size, random_state=42, stratify=y)
+
+            # Validation croisée
+            cv_choice = st.selectbox("Type de validation croisée", ["KFold", "StratifiedKFold"])
+            n_splits = st.slider("Nombre de plis pour la validation croisée", 2, 10, 5)
+
+            if st.button("Démarrer l'entraînement"):
+                models = {
+                    "Logistic Regression": LogisticRegression(max_iter=1000),
+                    "Random Forest": RandomForestClassifier(n_estimators=100, random_state=42),
+                    "SVM": SVC(random_state=42)
+                }
+
+                param_grids = {
+                    "Logistic Regression": {"C": [0.1, 1, 10]},
+                    "Random Forest": {"n_estimators": [50, 100, 200]},
+                    "SVM": {"C": [0.1, 1, 10], "kernel": ["linear", "rbf"]}
+                }
+
+                model_results = []
+
+                for model_name, model in models.items():
+                    grid_search = GridSearchCV(model, param_grids[model_name], cv=n_splits, scoring='accuracy')
+                    grid_search.fit(X_train, y_train)
+                    best_params = grid_search.best_params_
+                    best_score = grid_search.best_score_
+                    best_index = grid_search.best_index_
+
+                    mean_accuracy, std_accuracy = evaluate_model(grid_search.best_estimator_, X_selected, y, cv_choice, n_splits, model_name)
+                    model_results.append({
+                        "Modèle": model_name,
+                        "Précision moyenne": mean_accuracy,
+                        "Écart-type": std_accuracy,
+                        "Meilleur paramètre": best_params,
+                        "Meilleur score": best_score,
+                        "Meilleur index": best_index
+                    })
+
+                if model_results:
+                    st.write("Comparaison des performances des modèles :")
+                    results_df = pd.DataFrame(model_results)
+                    for index, row in results_df.iterrows():
+                        st.write(f"### {row['Modèle']}")
+                        st.write(f"- **Précision moyenne :** {row['Précision moyenne']:.2f}")
+                        st.write(f"- **Écart-type :** {row['Écart-type']:.2f}")
+                        st.write(f"- **Meilleur paramètre :** {row['Meilleur paramètre']}")
+                        st.write(f"- **Meilleur score :** {row['Meilleur score']:.2f}")
+                        st.write(f"- **Meilleur index :** {row['Meilleur index']}")
+                    st.write(results_df)
+
+                    best_model = max(model_results, key=lambda x: x["Précision moyenne"])
+                    best_model_name = best_model["Modèle"]
+                    st.write(f"Le meilleur modèle est : {best_model_name} avec une précision moyenne de "
+                            f"{best_model['Précision moyenne']:.2f}.")
+
+def evaluate_model(model, X, y, cv_choice, n_splits, model_name):
+    if cv_choice == "KFold":
+        cv = KFold(n_splits=n_splits, shuffle=True, random_state=42)
     else:
-        st.write("Erreur lors du nettoyage des données.")
+        cv = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=42)
+
+    cv_results = cross_val_score(model, X, y, cv=cv, scoring='accuracy')
+
+    st.write(f"Résultats pour {model_name}:")
+    for i, score in enumerate(cv_results, start=1):
+        st.write(f"- **Score du pli {i} :** {score:.2f}")
+    st.write(f"- **Précision moyenne :** {cv_results.mean():.2f}")
+    st.write(f"- **Écart-type :** {cv_results.std():.2f}")
+
+    model.fit(X, y)
+    st.write(f"Entraînement final sur l'ensemble complet pour {model_name}.")
+
+    return cv_results.mean(), cv_results.std()
