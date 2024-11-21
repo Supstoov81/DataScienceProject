@@ -1,3 +1,4 @@
+import os
 import streamlit as st
 import pandas as pd
 import seaborn as sns
@@ -11,69 +12,79 @@ from sklearn.preprocessing import LabelEncoder
 from .dataCleaner import clean_data
 
 def classification_page():
-    st.header("Bienvenue dans notre modèle de prédiction")
+    st.markdown('<h1 style="color: blue;">Bienvenue dans notre modèle de prédiction</h1>', unsafe_allow_html=True)
     st.caption("Classification des vins avec traitement des données et sélection de modèles")
 
-    # Chargement des données
-    file_path = st.text_input("Chemin vers le fichier CSV :", r"C:\Users\mattb\Documents\projet\data\cleaned_Vin.csv")
+    tabs = st.tabs(["Traitement", "Visualisation", "Entrainement et Evaluation"])
 
-    if file_path:
-        df_cleaned = clean_data(file_path)
+    # Onglet Traitement
+    with tabs[0]:
+        st.subheader("Traitement des données")
 
-        if df_cleaned is not None:
-            st.write("Aperçu des données :")
-            st.write(df_cleaned.head())
+        # Chargement des données
+        file_path = st.text_input("Chemin vers le fichier CSV :", "data/cleaned_Vin.csv")
+        path = os.path.join(os.getcwd(), file_path)
+        if file_path:
+            df_cleaned = clean_data(path)
 
-            # Gestion des valeurs manquantes
-            missing_value_option = st.selectbox("Choisissez comment traiter les valeurs manquantes",
-                                                ["Supprimer les lignes", "Supprimer les colonnes",
-                                                 "Remplir avec une valeur spécifique",
-                                                 "Remplir avec la moyenne",
-                                                 "Remplir avec la médiane"])
+            if df_cleaned is not None:
+                st.write("Aperçu des données :")
+                st.write(df_cleaned.head())
 
-            if missing_value_option == "Remplir avec une valeur spécifique":
-                fill_value = st.text_input("Entrez la valeur pour remplacer les valeurs manquantes :")
+                # Gestion des valeurs manquantes
+                missing_value_option = st.selectbox("Choisissez comment traiter les valeurs manquantes",
+                                                    ["Supprimer les lignes", "Supprimer les colonnes",
+                                                     "Remplir avec une valeur spécifique",
+                                                     "Remplir avec la moyenne",
+                                                     "Remplir avec la médiane"])
 
-            if missing_value_option == "Supprimer les lignes":
-                df_cleaned = df_cleaned.dropna()
-            elif missing_value_option == "Supprimer les colonnes":
-                df_cleaned = df_cleaned.dropna(axis=1)
-            elif missing_value_option == "Remplir avec une valeur spécifique" and fill_value:
-                df_cleaned = df_cleaned.fillna(fill_value)
-            elif missing_value_option == "Remplir avec la moyenne":
-                numeric_cols = df_cleaned.select_dtypes(include=['number']).columns
-                df_cleaned[numeric_cols] = df_cleaned[numeric_cols].fillna(df_cleaned[numeric_cols].mean())
-            elif missing_value_option == "Remplir avec la médiane":
-                numeric_cols = df_cleaned.select_dtypes(include=['number']).columns
-                df_cleaned[numeric_cols] = df_cleaned[numeric_cols].fillna(df_cleaned[numeric_cols].median())
+                if missing_value_option == "Remplir avec une valeur spécifique":
+                    fill_value = st.text_input("Entrez la valeur pour remplacer les valeurs manquantes :")
 
-            st.write("Données après traitement des valeurs manquantes :")
-            st.write(df_cleaned.head())
+                if missing_value_option == "Supprimer les lignes":
+                    df_cleaned = df_cleaned.dropna()
+                elif missing_value_option == "Supprimer les colonnes":
+                    df_cleaned = df_cleaned.dropna(axis=1)
+                elif missing_value_option == "Remplir avec une valeur spécifique" and fill_value:
+                    df_cleaned = df_cleaned.fillna(fill_value)
+                elif missing_value_option == "Remplir avec la moyenne":
+                    numeric_cols = df_cleaned.select_dtypes(include=['number']).columns
+                    df_cleaned[numeric_cols] = df_cleaned[numeric_cols].fillna(df_cleaned[numeric_cols].mean())
+                elif missing_value_option == "Remplir avec la médiane":
+                    numeric_cols = df_cleaned.select_dtypes(include=['number']).columns
+                    df_cleaned[numeric_cols] = df_cleaned[numeric_cols].fillna(df_cleaned[numeric_cols].median())
 
-            # Suppression de colonnes inutiles
-            if 'Index' in df_cleaned.columns:
-                df_cleaned = df_cleaned.drop(columns=['Index'])
+                st.write("Données après traitement des valeurs manquantes :")
+                st.write(df_cleaned.head())
 
-            X = df_cleaned.drop(columns=['target'])
-            y = df_cleaned['target']
+                # Suppression de colonnes inutiles
+                if 'Index' in df_cleaned.columns:
+                    df_cleaned = df_cleaned.drop(columns=['Index'])
 
-            # Sélection des features importantes
-            rf = RandomForestClassifier(n_estimators=100, random_state=42)
-            rf.fit(X, y)
-            feature_importances = pd.Series(rf.feature_importances_, index=X.columns)
+                X = df_cleaned.drop(columns=['target'])
+                y = df_cleaned['target']
 
-            st.write("Importance des features :")
-            st.write(feature_importances)
+                # Sélection des features importantes
+                rf = RandomForestClassifier(n_estimators=100, random_state=42)
+                rf.fit(X, y)
+                feature_importances = pd.Series(rf.feature_importances_, index=X.columns)
 
-            threshold = st.slider("Seuil pour sélectionner les features importantes", 0.0, 1.0, 0.05)
-            selected_features = feature_importances[feature_importances > threshold].index
+                st.write("Importance des features :")
+                st.write(feature_importances)
 
-            st.write("Features sélectionnées :")
-            st.write(selected_features)
+                threshold = st.slider("Seuil pour sélectionner les features importantes", 0.0, 1.0, 0.05)
+                selected_features = feature_importances[feature_importances > threshold].index
 
-            X_selected = X[selected_features]
+                st.write("Features sélectionnées :")
+                st.write(selected_features)
 
-            # Corrélation avec la cible
+                X_selected = X[selected_features]
+
+    # Onglet Visualisation
+    with tabs[1]:
+
+        # Corrélation avec la cible
+        if file_path and 'target' in df_cleaned:
             correlation_data = X_selected.copy()
             correlation_data['target'] = y
 
@@ -97,7 +108,11 @@ def classification_page():
             sns.heatmap(correlation_with_target, annot=True, cmap="coolwarm", cbar=True)
             st.pyplot(plt)
 
-            # Division des données
+    # Onglet Évaluation
+    with tabs[2]:
+
+        # Division des données
+        if file_path:
             test_size = st.slider("Taille de l'ensemble de test", 0.1, 0.5, 0.3)
             X_train, X_test, y_train, y_test = train_test_split(X_selected, y, test_size=test_size, random_state=42, stratify=y)
 
@@ -140,16 +155,12 @@ def classification_page():
                 if model_results:
                     st.write("Comparaison des performances des modèles :")
                     results_df = pd.DataFrame(model_results)
-                    for index, row in results_df.iterrows():
-                        st.write(f"### {row['Modèle']}")
-                        st.write(f"- **Précision moyenne :** {row['Précision moyenne']:.2f}")
-                        st.write(f"- **Écart-type :** {row['Écart-type']:.2f}")
-                        st.write(f"- **Meilleur paramètre :** {row['Meilleur paramètre']}")
-                        st.write(f"- **Meilleur score :** {row['Meilleur score']:.2f}")
-                        st.write(f"- **Meilleur index :** {row['Meilleur index']}")
-                    st.write(results_df)
-                    
-                    
+                    st.write(results_df)  # Afficher le tableau des résultats des modèles
+
+                    best_model = max(model_results, key=lambda x: x["Précision moyenne"])
+                    best_model_name = best_model["Modèle"]
+                    st.write(f"Le meilleur modèle est : {best_model_name} avec une précision moyenne de "
+                             f"{best_model['Précision moyenne']:.2f}.")
 
 def evaluate_model(model, X, y, cv_choice, n_splits, model_name):
     if cv_choice == "KFold":
@@ -167,7 +178,5 @@ def evaluate_model(model, X, y, cv_choice, n_splits, model_name):
 
     model.fit(X, y)
     st.write(f"Entraînement final sur l'ensemble complet pour {model_name}.")
-    st.write(f"Le meilleur modèle après l'optimisation est : {best_model_name} avec une précision moyenne de {results_df.loc[best_model_name, 'Précision moyenne']:.2f}.")
-
 
     return cv_results.mean(), cv_results.std()
