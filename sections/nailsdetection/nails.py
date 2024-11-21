@@ -2,11 +2,12 @@ import streamlit as st
 import io
 import base64
 from PIL import Image, ImageDraw
-from inference_sdk import InferenceHTTPClient
+from inference_sdk import InferenceHTTPClient, InferenceConfiguration
 
+custom_configuration = InferenceConfiguration(confidence_threshold=0.90)
 CLIENT = InferenceHTTPClient(
-    api_url="https://detect.roboflow.com", api_key="1yftlULBWV4Wy0xGw58x"
-)
+    api_url="https://detect.roboflow.com", api_key="Gk3YGuQPvdT8XhCh9HCs"
+).configure(custom_configuration)
 
 
 def nail_page():
@@ -107,7 +108,7 @@ def on_images_uploaded():
             img_bytes = img_bytes.getvalue()
             img_base64 = base64.b64encode(img_bytes).decode()
 
-            response = CLIENT.infer(img_base64, model_id="nails-detection-hs7q7/1")
+            response = CLIENT.infer(img_base64, model_id="nail-detection-iqigg/1")
             results.append(response)
 
             # Draw bounding boxes on the image
