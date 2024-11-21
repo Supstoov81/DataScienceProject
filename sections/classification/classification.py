@@ -1,3 +1,4 @@
+import os
 import streamlit as st
 import pandas as pd
 import seaborn as sns
@@ -16,10 +17,10 @@ def classification_page():
 
     # Chargement des données
     file_path = st.text_input("Chemin vers le fichier CSV :", "data\cleaned_Vin.csv")
-
+    path = os.path.join(os.getcwd(), file_path)
     if file_path:
-        df_cleaned = clean_data(file_path)
-
+        df_cleaned = clean_data(path)
+        
         if df_cleaned is not None:
             st.write("Aperçu des données :")
             st.write(df_cleaned.head())
