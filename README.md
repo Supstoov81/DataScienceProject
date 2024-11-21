@@ -3,7 +3,7 @@ Ce projet est une application interactive basée sur Streamlit qui regroupe plus
 
 ## Modules
 
-### 1. Régression => Cheick NGOM
+### 1. Régression => Cheikh NGOM
 **But** : Prédire une variable cible continue à partir de données médicales liées au diabète 
 
 **Caractéristiques principales :**
