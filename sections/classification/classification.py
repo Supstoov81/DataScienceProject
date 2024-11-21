@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
-from sklearn.model_selection import train_test_split, KFold, StratifiedKFold, cross_val_score
+from sklearn.model_selection import train_test_split, KFold, StratifiedKFold, cross_val_score, GridSearchCV
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.svm import SVC
@@ -112,20 +112,44 @@ def classification_page():
                     "SVM": SVC(random_state=42)
                 }
 
-                model_results = {}
+                param_grids = {
+                    "Logistic Regression": {"C": [0.1, 1, 10]},
+                    "Random Forest": {"n_estimators": [50, 100, 200]},
+                    "SVM": {"C": [0.1, 1, 10], "kernel": ["linear", "rbf"]}
+                }
+
+                model_results = []
 
                 for model_name, model in models.items():
-                    mean_accuracy, std_accuracy = evaluate_model(model, X_selected, y, cv_choice, n_splits, model_name)
-                    model_results[model_name] = {"Précision moyenne": mean_accuracy, "Écart-type": std_accuracy}
+                    grid_search = GridSearchCV(model, param_grids[model_name], cv=n_splits, scoring='accuracy')
+                    grid_search.fit(X_train, y_train)
+                    best_params = grid_search.best_params_
+                    best_score = grid_search.best_score_
+                    best_index = grid_search.best_index_
+
+                    mean_accuracy, std_accuracy = evaluate_model(grid_search.best_estimator_, X_selected, y, cv_choice, n_splits, model_name)
+                    model_results.append({
+                        "Modèle": model_name,
+                        "Précision moyenne": mean_accuracy,
+                        "Écart-type": std_accuracy,
+                        "Meilleur paramètre": best_params,
+                        "Meilleur score": best_score,
+                        "Meilleur index": best_index
+                    })
 
                 if model_results:
                     st.write("Comparaison des performances des modèles :")
-                    results_df = pd.DataFrame(model_results).T
+                    results_df = pd.DataFrame(model_results)
+                    for index, row in results_df.iterrows():
+                        st.write(f"### {row['Modèle']}")
+                        st.write(f"- **Précision moyenne :** {row['Précision moyenne']:.2f}")
+                        st.write(f"- **Écart-type :** {row['Écart-type']:.2f}")
+                        st.write(f"- **Meilleur paramètre :** {row['Meilleur paramètre']}")
+                        st.write(f"- **Meilleur score :** {row['Meilleur score']:.2f}")
+                        st.write(f"- **Meilleur index :** {row['Meilleur index']}")
                     st.write(results_df)
-
-                    best_model_name = max(model_results, key=lambda x: model_results[x]["Précision moyenne"])
-                    st.write(f"Le meilleur modèle est : {best_model_name} avec une précision moyenne de "
-                             f"{model_results[best_model_name]['Précision moyenne']:.2f}.")
+                    
+                    
 
 def evaluate_model(model, X, y, cv_choice, n_splits, model_name):
     if cv_choice == "KFold":
@@ -136,11 +160,14 @@ def evaluate_model(model, X, y, cv_choice, n_splits, model_name):
     cv_results = cross_val_score(model, X, y, cv=cv, scoring='accuracy')
 
     st.write(f"Résultats pour {model_name}:")
-    st.write(cv_results)
-    st.write(f"Précision moyenne : {cv_results.mean():.2f}")
-    st.write(f"Écart-type : {cv_results.std():.2f}")
+    for i, score in enumerate(cv_results, start=1):
+        st.write(f"- **Score du pli {i} :** {score:.2f}")
+    st.write(f"- **Précision moyenne :** {cv_results.mean():.2f}")
+    st.write(f"- **Écart-type :** {cv_results.std():.2f}")
 
     model.fit(X, y)
     st.write(f"Entraînement final sur l'ensemble complet pour {model_name}.")
+    st.write(f"Le meilleur modèle après l'optimisation est : {best_model_name} avec une précision moyenne de {results_df.loc[best_model_name, 'Précision moyenne']:.2f}.")
+
 
     return cv_results.mean(), cv_results.std()
