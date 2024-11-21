@@ -1,4 +1,5 @@
 import os
+import os
 import streamlit as st
 import pandas as pd
 import seaborn as sns
@@ -12,7 +13,7 @@ from sklearn.preprocessing import LabelEncoder
 from .dataCleaner import clean_data
 
 def classification_page():
-    st.header("Bienvenue dans notre modèle de prédiction")
+    st.markdown('<h1 style="color: blue;">Bienvenue dans notre modèle de prédiction</h1>', unsafe_allow_html=True)
     st.caption("Classification des vins avec traitement des données et sélection de modèles")
 
     tabs = st.tabs(["Traitement", "Visualisation", "Entrainement et Evaluation"])
@@ -163,11 +164,8 @@ def classification_page():
                         st.write(f"- **Meilleur score :** {row['Meilleur score']:.2f}")
                         st.write(f"- **Meilleur index :** {row['Meilleur index']}")
                     st.write(results_df)
-
-                    best_model = max(model_results, key=lambda x: x["Précision moyenne"])
-                    best_model_name = best_model["Modèle"]
-                    st.write(f"Le meilleur modèle est : {best_model_name} avec une précision moyenne de "
-                             f"{best_model['Précision moyenne']:.2f}.")
+                    
+                    
 
 def evaluate_model(model, X, y, cv_choice, n_splits, model_name):
     if cv_choice == "KFold":
