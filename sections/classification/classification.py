@@ -167,7 +167,7 @@ def evaluate_model(model, X, y, cv_choice, n_splits, model_name):
 
     model.fit(X, y)
     st.write(f"Entraînement final sur l'ensemble complet pour {model_name}.")
-    st.write(f"Le meilleur modèle après l'optimisation est : {best_model_name} avec une précision moyenne de {results_df.loc[best_model_name, 'Précision moyenne']:.2f}.")
+    
 
 
     return cv_results.mean(), cv_results.std()
