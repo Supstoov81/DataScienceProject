@@ -14,7 +14,7 @@ from .dataCleaner import clean_data
 
 def classification_page():
     st.markdown('<h1 style="color: blue;">Bienvenue dans notre modèle de prédiction</h1>', unsafe_allow_html=True)
-    st.title("Classification des vins avec traitement des données et sélection de modèles")
+    st.caption("Classification des vins avec traitement des données et sélection de modèles")
 
     tabs = st.tabs(["Traitement", "Visualisation", "Entrainement et Evaluation"])
 
