@@ -16,7 +16,7 @@ def classification_page():
     st.caption("Classification des vins avec traitement des données et sélection de modèles")
 
     # Chargement des données
-    file_path = st.text_input("Chemin vers le fichier CSV :", "data\cleaned_Vin.csv")
+    file_path = st.text_input("Chemin vers le fichier CSV :", "data/cleaned_Vin.csv")
     path = os.path.join(os.getcwd(), file_path)
     if file_path:
         df_cleaned = clean_data(path)
