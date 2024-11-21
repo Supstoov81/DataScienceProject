@@ -26,7 +26,6 @@ Ce projet est une application interactive basée sur Streamlit qui regroupe plus
 - Création d'un modèle de classification basé sur la régression logistique.
 - Affichage des résultats :
   - Précision (Accuracy)
-  - Matrice de confusion
   - Rapport de classification.
 - Graphique heatmap montrant la corrélation entre les features choisies et la target
 
