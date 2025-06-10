@@ -12,32 +12,24 @@ from sections.regression.regression import regression_page
 
 # Configuration de la page
 st.set_page_config(
-    page_title="Playground ML",
-    page_icon="🧊",
-    layout="wide",
-    initial_sidebar_state="expanded",
+    page_title="Projet de Data Science",
+    page_icon="📊",
+    layout="wide"
 )
 
 # Message de débogage
 st.write("Application démarrée avec succès!")
 
-# Choix dans la barre latérale
-type_data = st.sidebar.radio(
-    "Choisissez votre type de playground",
-    ["Regression", "Classification", "NailsDetection"]
-)
+# Barre latérale pour la navigation
+st.sidebar.title("Navigation")
+page = st.sidebar.radio("Choisissez une page", ["Accueil", "Classification"])
 
-# Chargement des pages en fonction du choix
-try:
-    if type_data == "Regression":
-        regression_page()
-    elif type_data == "Classification":
-        classification_page()
-    elif type_data == "NailsDetection":
-        nail_page()
-    else:
-        st.write("Choisissez une option")
-except Exception as e:
-    st.error(f"Une erreur est survenue : {str(e)}")
-    st.write("Détails de l'erreur :")
-    st.exception(e)
+if page == "Accueil":
+    home_page()
+elif page == "Classification":
+    # Sous-menu pour les onglets de classification
+    classification_tab = st.sidebar.radio(
+        "Sélectionnez une section",
+        ["Traitement des données", "Visualisation", "Entraînement et Evaluation"]
+    )
+    classification_page(classification_tab)
