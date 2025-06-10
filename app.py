@@ -54,29 +54,41 @@ def home_page():
     4. Entraînez et évaluez les modèles
     """)
 
-# Configuration de la page
-st.set_page_config(
-    page_title="Projet de Data Science",
-    page_icon="📊",
-    layout="wide"
-)
-
-# Message de débogage
-st.write("Application démarrée avec succès!")
-
-# Barre latérale pour la navigation
-st.sidebar.title("Navigation")
-page = st.sidebar.radio("Choisissez une page", ["Accueil", "Classification"])
-
-if page == "Accueil":
-    home_page()
-elif page == "Classification":
-    # Sous-menu pour les onglets de classification
-    classification_tab = st.sidebar.radio(
-        "Sélectionnez une section",
-        ["Traitement des données", "Visualisation", "Entraînement et Evaluation"]
+def main():
+    # Configuration de la page
+    st.set_page_config(
+        page_title="Projet de Data Science",
+        page_icon="📊",
+        layout="wide"
     )
-    classification_page(classification_tab)
+
+    # Barre latérale pour la navigation
+    st.sidebar.title("Navigation")
+    page = st.sidebar.radio("Choisissez un modèle", ["Accueil", "Classification", "Régression", "Détection d'ongles"])
+
+    if page == "Accueil":
+        home_page()
+    elif page == "Classification":
+        st.title("Classification")
+        tabs = st.tabs(["Traitement des données", "Visualisation", "Entraînement et Evaluation"])
+        with tabs[0]:
+            classification_page("Traitement des données")
+        with tabs[1]:
+            classification_page("Visualisation")
+        with tabs[2]:
+            classification_page("Entraînement et Evaluation")
+    elif page == "Régression":
+        st.title("Régression")
+        tabs = st.tabs(["Traitement des données", "Visualisation", "Entraînement et Evaluation"])
+        with tabs[0]:
+            regression_page("Traitement des données")
+        with tabs[1]:
+            regression_page("Visualisation")
+        with tabs[2]:
+            regression_page("Entraînement et Evaluation")
+    elif page == "Détection d'ongles":
+        st.title("Détection d'ongles")
+        nail_page()
 
 if __name__ == "__main__":
     main()
