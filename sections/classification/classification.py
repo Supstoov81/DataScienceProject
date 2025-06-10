@@ -27,12 +27,19 @@ def classification_page():
         st.subheader("Traitement des données")
 
         # Chargement des données
-        file_path = st.text_input("Chemin vers le fichier CSV :", "data/cleaned_Vin.csv")
-        path = os.path.join(os.getcwd(), file_path)
-        if file_path:
+        default_file = "cleaned.csv"  # Fichier par défaut dans le même dossier
+        file_path = st.text_input("Chemin vers le fichier CSV :", default_file)
+        
+        # Utiliser le chemin relatif au fichier courant
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        path = os.path.join(current_dir, file_path)
+        
+        st.write(f"Tentative de chargement du fichier : {path}")
+        
+        if os.path.exists(path):
             df_cleaned = clean_data(path)
-
             if df_cleaned is not None:
+                st.success("Fichier chargé avec succès!")
                 st.write("Aperçu des données :")
                 st.write(df_cleaned.head())
 
