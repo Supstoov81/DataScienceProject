@@ -1,5 +1,4 @@
 import os
-import os
 import streamlit as st
 import pandas as pd
 import seaborn as sns
@@ -10,7 +9,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.svm import SVC
 from sklearn.metrics import accuracy_score
 from sklearn.preprocessing import LabelEncoder
-from .dataCleaner import clean_data
+from sections.classification.dataCleaner import clean_data
 
 def classification_page():
     st.markdown('<h1 style="color: blue;">Bienvenue dans notre modèle de prédiction</h1>', unsafe_allow_html=True)
