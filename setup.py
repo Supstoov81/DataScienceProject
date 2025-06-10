@@ -3,7 +3,8 @@ from setuptools import setup, find_packages
 setup(
     name="datascienceproject",
     version="0.1",
-    packages=find_packages(),
+    packages=find_packages(include=['sections', 'sections.*']),
+    package_dir={'sections': 'sections'},
     install_requires=[
         "streamlit==1.24.0",
         "numpy==1.21.6",
@@ -14,4 +15,5 @@ setup(
         "matplotlib==3.5.1",
         "unidecode==1.3.6"
     ],
+    python_requires='>=3.9',
 ) 
